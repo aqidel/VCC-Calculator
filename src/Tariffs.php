@@ -23,7 +23,7 @@ class Tariffs
     public static function getCustomsClearanceTax(int $vehiclePriceRUB): int
     {
         if ($vehiclePriceRUB <= 0) {
-            throw new IncorrectVehiclePriceException();
+            throw new IncorrectVehiclePriceException('Vehicle price must be greater than 0!');
         }
 
         return match (true) {
@@ -50,7 +50,7 @@ class Tariffs
     public static function getExciseDuty(int $horsePowers): int
     {
         if ($horsePowers <= 0) {
-            throw new IncorrectHorsePowersException();
+            throw new IncorrectHorsePowersException('Engine power must be greater than zero!');
         }
 
         return match (true) {
@@ -88,11 +88,11 @@ class Tariffs
         bool $isElectric = false
     ): float {
         if ($engineCapacity <= 0) {
-            throw new IncorrectRecyclingFeeParam(IncorrectRecyclingFeeParamEnum::IncorrectEngineCapacity);
+            throw new IncorrectRecyclingFeeParam('Engine capacity can\'t be less or equal to zero!');
         }
 
         if ($vehicleAge < 0) {
-            throw new IncorrectRecyclingFeeParam(IncorrectRecyclingFeeParamEnum::IncorrectVehicleAge);
+            throw new IncorrectRecyclingFeeParam('Vehicle age can\'t be negative!');
         }
 
         if ($isElectric) {
