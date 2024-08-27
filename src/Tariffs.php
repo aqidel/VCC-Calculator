@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Aqidel\VCCCalculator;
 
-use Aqidel\VCCCalculator\Enums\IncorrectRecyclingFeeParamEnum;
 use Aqidel\VCCCalculator\Exceptions\IncorrectHorsePowersException;
 use Aqidel\VCCCalculator\Exceptions\IncorrectVehiclePriceException;
 use Aqidel\VCCCalculator\Exceptions\IncorrectRecyclingFeeParam;
@@ -15,7 +14,7 @@ use Aqidel\VCCCalculator\Exceptions\IncorrectRecyclingFeeParam;
 class Tariffs
 {
     /**
-     * Сбор за таможенное оформление, в RUB
+     * Сбор за таможенное оформление, RUB
      * @param int $vehiclePriceRUB
      * @return int
      * @throws IncorrectVehiclePriceException
@@ -54,18 +53,18 @@ class Tariffs
         }
 
         return match (true) {
-            $horsePowers < 90 => 0,
-            $horsePowers < 150 => 55,
-            $horsePowers < 200 => 531,
-            $horsePowers < 300 => 869,
-            $horsePowers < 400 => 1482,
-            $horsePowers < 500 => 1534,
+            $horsePowers <= 90 => 0,
+            $horsePowers <= 150 => 55,
+            $horsePowers <= 200 => 531,
+            $horsePowers <= 300 => 869,
+            $horsePowers <= 400 => 1482,
+            $horsePowers <= 500 => 1534,
             default => 1584,
         };
     }
 
     /**
-     * Базовая ставка утилизационного сбора
+     * Базовая ставка утилизационного сбора, RUB
      * @param bool $isCommercialVehicle
      * @return int
      */
@@ -101,15 +100,83 @@ class Tariffs
 
         if ($vehicleAge < 3) {
             return match (true) {
-                $engineCapacity < 3000 => 0.17,
-                $engineCapacity < 3500 => 48.5,
+                $engineCapacity <= 3000 => 0.17,
+                $engineCapacity <= 3500 => 48.5,
                 default => 61.67,
             };
         } else {
             return match (true) {
-                $engineCapacity < 3000 => 0.26,
-                $engineCapacity < 3500 => 74.25,
+                $engineCapacity <= 3000 => 0.26,
+                $engineCapacity <= 3500 => 74.25,
                 default => 81.19,
+            };
+        }
+    }
+
+    /**
+     * Коэффициент утилизационного сбора для юридических лиц
+     * @param int $engineCapacity
+     * @param int $vehicleAge
+     * @param bool $isElectric
+     * @return float
+     * @throws IncorrectRecyclingFeeParam
+     */
+    public static function getRecyclingFeeCompanyCoefficient(
+        int $engineCapacity,
+        int $vehicleAge,
+        bool $isElectric = false
+    ): float {
+        if ($engineCapacity <= 0) {
+            throw new IncorrectRecyclingFeeParam('Engine capacity can\'t be less or equal to zero!');
+        }
+
+        if ($vehicleAge < 0) {
+            throw new IncorrectRecyclingFeeParam('Vehicle age can\'t be negative!');
+        }
+
+        if ($isElectric) {
+            return $vehicleAge < 3 ? 18 : 67.34;
+        }
+
+        if ($vehicleAge < 3) {
+            return match (true) {
+                $engineCapacity <= 1000 => 4.06,
+                $engineCapacity <= 2000 => 15.03,
+                $engineCapacity <= 3000 => 42.24,
+                $engineCapacity <= 3500 => 48.5,
+                default => 61.76,
+            };
+        } else {
+            return match (true) {
+                $engineCapacity <= 1000 => 10.36,
+                $engineCapacity <= 2000 => 26.44,
+                $engineCapacity <= 3000 => 63.95,
+                $engineCapacity <= 3500 => 74.25,
+                default => 81.19,
+            };
+        }
+    }
+
+    /**
+     * Таможенная пошлина для физических лиц, EUR
+     * @param int $engineCapacity
+     * @param int $vehicleAge
+     * @param int $vehiclePriceEUR
+     * @return float
+     */
+    public static function getCustomsFeeIndividual(
+        int $engineCapacity,
+        int $vehicleAge,
+        int $vehiclePriceEUR,
+    ): float {
+        if ($vehicleAge < 3) {
+            return match (true) {
+                $vehiclePriceEUR < 8500 => max($vehiclePriceEUR * 0.54, $engineCapacity * 2.5),
+                $vehiclePriceEUR < 16700 => max($vehiclePriceEUR * 0.48, $engineCapacity * 3.5),
+                $vehiclePriceEUR < 42300 => max($vehiclePriceEUR * 0.48, $engineCapacity * 5.5),
+                $vehiclePriceEUR < 84500 => max($vehiclePriceEUR * 0.48, $engineCapacity * 7.5),
+                $vehiclePriceEUR < 169000 => max($vehiclePriceEUR * 0.48, $engineCapacity * 15),
+                default => max($vehiclePriceEUR * 0.48, $engineCapacity * 20),
             };
         }
     }
