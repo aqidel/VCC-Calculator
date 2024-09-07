@@ -14,6 +14,12 @@ use Aqidel\VCCCalculator\Exceptions\IncorrectRecyclingFeeParam;
 class Tariffs
 {
     /**
+     * Базовая ставка НДС
+     * @var float
+     */
+    public const BASE_VAT = 0.2;
+
+    /**
      * Сбор за таможенное оформление, RUB
      * @param int $vehiclePriceRUB
      * @return int
@@ -81,7 +87,7 @@ class Tariffs
      * @return float
      * @throws IncorrectRecyclingFeeParam
      */
-    public static function getRecyclingFeeIndividualCoefficient(
+    public static function getRecyclingFeeCoefficientForIndividual(
         int $engineCapacity,
         int $vehicleAge,
         bool $isElectric = false
@@ -104,13 +110,13 @@ class Tariffs
                 $engineCapacity <= 3500 => 48.5,
                 default => 61.67,
             };
-        } else {
-            return match (true) {
-                $engineCapacity <= 3000 => 0.26,
-                $engineCapacity <= 3500 => 74.25,
-                default => 81.19,
-            };
         }
+
+        return match (true) {
+            $engineCapacity <= 3000 => 0.26,
+            $engineCapacity <= 3500 => 74.25,
+            default => 81.19,
+        };
     }
 
     /**
@@ -121,7 +127,7 @@ class Tariffs
      * @return float
      * @throws IncorrectRecyclingFeeParam
      */
-    public static function getRecyclingFeeCompanyCoefficient(
+    public static function getRecyclingFeeCoefficientForCompany(
         int $engineCapacity,
         int $vehicleAge,
         bool $isElectric = false
@@ -146,15 +152,15 @@ class Tariffs
                 $engineCapacity <= 3500 => 48.5,
                 default => 61.76,
             };
-        } else {
-            return match (true) {
-                $engineCapacity <= 1000 => 10.36,
-                $engineCapacity <= 2000 => 26.44,
-                $engineCapacity <= 3000 => 63.95,
-                $engineCapacity <= 3500 => 74.25,
-                default => 81.19,
-            };
         }
+
+        return match (true) {
+            $engineCapacity <= 1000 => 10.36,
+            $engineCapacity <= 2000 => 26.44,
+            $engineCapacity <= 3000 => 63.95,
+            $engineCapacity <= 3500 => 74.25,
+            default => 81.19,
+        };
     }
 
     /**
@@ -164,7 +170,7 @@ class Tariffs
      * @param int $vehiclePriceEUR
      * @return float
      */
-    public static function getCustomsFeeIndividual(
+    public static function getCustomsFeeForIndividual(
         int $engineCapacity,
         int $vehicleAge,
         int $vehiclePriceEUR,
@@ -178,6 +184,89 @@ class Tariffs
                 $vehiclePriceEUR < 169000 => max($vehiclePriceEUR * 0.48, $engineCapacity * 15),
                 default => max($vehiclePriceEUR * 0.48, $engineCapacity * 20),
             };
+        } elseif ($vehicleAge < 5) {
+            return match (true) {
+                $engineCapacity <= 1000 => $engineCapacity * 1.5,
+                $engineCapacity <= 1500 => $engineCapacity * 1.7,
+                $engineCapacity <= 1800 => $engineCapacity * 2.5,
+                $engineCapacity <= 2300 => $engineCapacity * 2.7,
+                $engineCapacity <= 3000 => $engineCapacity * 3,
+                default => $engineCapacity * 3.6,
+            };
         }
+
+        return match (true) {
+            $engineCapacity <= 1000 => $engineCapacity * 3,
+            $engineCapacity <= 1500 => $engineCapacity * 3.2,
+            $engineCapacity <= 1800 => $engineCapacity * 3.5,
+            $engineCapacity <= 2300 => $engineCapacity * 4.8,
+            $engineCapacity <= 3000 => $engineCapacity * 5,
+            default => $engineCapacity * 5.7,
+        };
+    }
+
+    /**
+     * Таможенная пошлина для юридических лиц, бензиновый двигатель, EUR
+     * @param int $engineCapacity
+     * @param int $vehicleAge
+     * @param int $vehiclePriceEUR
+     * @return float
+     */
+    public static function getCustomsFeeGasEngineForCompany(
+        int $engineCapacity,
+        int $vehicleAge,
+        int $vehiclePriceEUR,
+    ): float {
+        if ($vehicleAge < 3) {
+            return match (true) {
+                $engineCapacity <= 3000 => $vehiclePriceEUR * 0.15,
+                default => $vehiclePriceEUR * 0.125,
+            };
+        } elseif ($vehicleAge < 7) {
+            return match (true) {
+                $engineCapacity <= 1000 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.36),
+                $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
+                $engineCapacity <= 1800 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.36),
+                $engineCapacity <= 3000 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.44),
+                default => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.8),
+            };
+        }
+
+        return match (true) {
+            $engineCapacity <= 1000 => $engineCapacity * 1.4,
+            $engineCapacity <= 1500 => $engineCapacity * 1.5,
+            $engineCapacity <= 1800 => $engineCapacity * 1.6,
+            $engineCapacity <= 3000 => $engineCapacity * 2.2,
+            default => $engineCapacity * 3.2,
+        };
+    }
+
+    /**
+     * Таможенная пошлина для юридических лиц, дизельный двигатель, EUR
+     * @param int $engineCapacity
+     * @param int $vehicleAge
+     * @param int $vehiclePriceEUR
+     * @return float
+     */
+    public static function getCustomsFeeDieselEngineForCompany(
+        int $engineCapacity,
+        int $vehicleAge,
+        int $vehiclePriceEUR,
+    ): float {
+        if ($vehicleAge < 3) {
+            return $vehiclePriceEUR * 0.15;
+        } elseif ($vehicleAge < 7) {
+            return match (true) {
+                $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.32),
+                $engineCapacity <= 2500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
+                default => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.8),
+            };
+        }
+
+        return match (true) {
+            $engineCapacity <= 1500 => $engineCapacity * 1.5,
+            $engineCapacity <= 2500 => $engineCapacity * 2.2,
+            default => $engineCapacity * 3.2,
+        };
     }
 }
