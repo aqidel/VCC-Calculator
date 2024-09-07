@@ -167,13 +167,13 @@ class Tariffs
      * Таможенная пошлина для физических лиц, EUR
      * @param int $engineCapacity
      * @param int $vehicleAge
-     * @param int $vehiclePriceEUR
+     * @param float $vehiclePriceEUR
      * @return float
      */
     public static function getCustomsFeeForIndividual(
         int $engineCapacity,
         int $vehicleAge,
-        int $vehiclePriceEUR,
+        float $vehiclePriceEUR,
     ): float {
         if ($vehicleAge < 3) {
             return match (true) {
@@ -209,13 +209,13 @@ class Tariffs
      * Таможенная пошлина для юридических лиц, бензиновый двигатель, EUR
      * @param int $engineCapacity
      * @param int $vehicleAge
-     * @param int $vehiclePriceEUR
+     * @param float $vehiclePriceEUR
      * @return float
      */
     public static function getCustomsFeeGasEngineForCompany(
         int $engineCapacity,
         int $vehicleAge,
-        int $vehiclePriceEUR,
+        float $vehiclePriceEUR,
     ): float {
         if ($vehicleAge < 3) {
             return match (true) {
@@ -245,13 +245,13 @@ class Tariffs
      * Таможенная пошлина для юридических лиц, дизельный двигатель, EUR
      * @param int $engineCapacity
      * @param int $vehicleAge
-     * @param int $vehiclePriceEUR
+     * @param float $vehiclePriceEUR
      * @return float
      */
     public static function getCustomsFeeDieselEngineForCompany(
         int $engineCapacity,
         int $vehicleAge,
-        int $vehiclePriceEUR,
+        float $vehiclePriceEUR,
     ): float {
         if ($vehicleAge < 3) {
             return $vehiclePriceEUR * 0.15;
