@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Aqidel\VCCCalculator;
 
+use Aqidel\VCCCalculator\Enums\EnginePowerUnitOfMeasurementEnum;
 use Aqidel\VCCCalculator\Enums\EngineTypeEnum;
 use Aqidel\VCCCalculator\Exceptions\IncorrectHorsePowersException;
 use Aqidel\VCCCalculator\Exceptions\IncorrectVehiclePriceException;
@@ -12,7 +13,7 @@ use Aqidel\VCCCalculator\Exceptions\IncorrectRecyclingFeeParam;
 /**
  * Ставки пошлин и налогов
  */
-class Tariffs
+final class Tariffs
 {
     /**
      * Базовая ставка НДС
@@ -49,23 +50,30 @@ class Tariffs
 
     /**
      * Акциз, RUB за л.с.
-     * @param int $horsePowers
+     * @param EnginePowerUnitOfMeasurementEnum $enginePowerUnitOfMeasurement
+     * @param int $enginePower
      * @return int
      * @throws IncorrectHorsePowersException
      */
-    public static function getExciseDuty(int $horsePowers): int
-    {
-        if ($horsePowers <= 0) {
+    public static function getExciseDuty(
+        EnginePowerUnitOfMeasurementEnum $enginePowerUnitOfMeasurement,
+        int $enginePower,
+    ): int {
+        if ($enginePower <= 0) {
             throw new IncorrectHorsePowersException('Engine power must be greater than zero!');
         }
 
+        if ($enginePowerUnitOfMeasurement === EnginePowerUnitOfMeasurementEnum::KILOWATT) {
+            $enginePower = (int)ceil($enginePower * 1.3596);
+        }
+
         return match (true) {
-            $horsePowers <= 90 => 0,
-            $horsePowers <= 150 => 55,
-            $horsePowers <= 200 => 531,
-            $horsePowers <= 300 => 869,
-            $horsePowers <= 400 => 1482,
-            $horsePowers <= 500 => 1534,
+            $enginePower <= 90 => 0,
+            $enginePower <= 150 => 55,
+            $enginePower <= 200 => 531,
+            $enginePower <= 300 => 869,
+            $enginePower <= 400 => 1482,
+            $enginePower <= 500 => 1534,
             default => 1584,
         };
     }
