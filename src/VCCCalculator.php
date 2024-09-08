@@ -64,17 +64,18 @@ final class VCCCalculator
             $vehicleOwnerType === VehicleOwnerTypeEnum::PERSON
             || $vehicleOwnerType === VehicleOwnerTypeEnum::PERSON_RESALE
         ) {
-            return Tariffs::getCustomsFeeForIndividual($engineCapacityKubCm, $vehicleAge, $vehiclePriceEUR);
-        } elseif (
-            $vehicleOwnerType === VehicleOwnerTypeEnum::COMPANY
-            && $engineType === EngineTypeEnum::GASOLINE
-        ) {
-            return Tariffs::getCustomsFeeGasEngineForCompany($engineCapacityKubCm, $vehicleAge, $vehiclePriceEUR);
-        } elseif (
-            $vehicleOwnerType === VehicleOwnerTypeEnum::COMPANY
-            && $engineType === EngineTypeEnum::DIESEL
-        ) {
-            return Tariffs::getCustomsFeeDieselEngineForCompany($engineCapacityKubCm, $vehicleAge, $vehiclePriceEUR);
+            return Tariffs::getCustomsFeeForIndividual(
+                $engineCapacityKubCm,
+                $vehicleAge,
+                $vehiclePriceEUR
+            );
+        } elseif ($vehicleOwnerType === VehicleOwnerTypeEnum::COMPANY) {
+            return Tariffs::getCustomsFeeForCompany(
+                $engineType,
+                $engineCapacityKubCm,
+                $vehicleAge,
+                $vehiclePriceEUR
+            );
         }
 
         return null;
