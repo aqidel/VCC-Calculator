@@ -6,7 +6,7 @@ namespace Aqidel\VCCCalculator\Exceptions;
 
 use Exception;
 
-class IncorrectRecyclingFeeParam extends Exception
+class IncorrectRecyclingFeeParamException extends Exception
 {
     function __construct(string $message)
     {

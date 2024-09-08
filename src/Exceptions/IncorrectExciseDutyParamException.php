@@ -6,7 +6,7 @@ namespace Aqidel\VCCCalculator\Exceptions;
 
 use Exception;
 
-class IncorrectHorsePowersException extends Exception
+class IncorrectExciseDutyParamException extends Exception
 {
     function __construct(string $message)
     {
