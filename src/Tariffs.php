@@ -6,9 +6,7 @@ namespace Aqidel\VCCCalculator;
 
 use Aqidel\VCCCalculator\Enums\EnginePowerUnitOfMeasurementEnum;
 use Aqidel\VCCCalculator\Enums\EngineTypeEnum;
-use Aqidel\VCCCalculator\Exceptions\IncorrectExciseDutyParamException;
-use Aqidel\VCCCalculator\Exceptions\IncorrectVehiclePriceException;
-use Aqidel\VCCCalculator\Exceptions\IncorrectRecyclingFeeParamException;
+use Aqidel\VCCCalculator\Exceptions\WrongParamException;
 
 /**
  * Ставки пошлин и налогов
@@ -31,12 +29,12 @@ final class Tariffs
      * Сбор за таможенное оформление, RUB
      * @param float $vehiclePriceRUB
      * @return int
-     * @throws IncorrectVehiclePriceException
+     * @throws WrongParamException
      */
     public static function getCustomsClearanceTax(float $vehiclePriceRUB): int
     {
         if ($vehiclePriceRUB <= 0) {
-            throw new IncorrectVehiclePriceException('Vehicle price must be greater than 0!');
+            throw new WrongParamException('Vehicle price must be greater than 0!');
         }
 
         return match (true) {
@@ -59,14 +57,14 @@ final class Tariffs
      * @param EnginePowerUnitOfMeasurementEnum $enginePowerUnitOfMeasurement
      * @param int $enginePower
      * @return int
-     * @throws IncorrectExciseDutyParamException
+     * @throws WrongParamException
      */
     public static function getExciseDuty(
         EnginePowerUnitOfMeasurementEnum $enginePowerUnitOfMeasurement,
         int $enginePower,
     ): int {
         if ($enginePower <= 0) {
-            throw new IncorrectExciseDutyParamException('Engine power must be greater than zero!');
+            throw new WrongParamException('Engine power must be greater than zero!');
         }
 
         if ($enginePowerUnitOfMeasurement === EnginePowerUnitOfMeasurementEnum::KILOWATT) {
@@ -110,7 +108,7 @@ final class Tariffs
      * @param int $engineCapacity
      * @param int $vehicleAge
      * @return float
-     * @throws IncorrectRecyclingFeeParamException
+     * @throws WrongParamException
      */
     public static function getRecyclingFeeCoefficientForPerson(
         EngineTypeEnum $engineType,
@@ -118,11 +116,11 @@ final class Tariffs
         int $vehicleAge,
     ): float {
         if ($engineCapacity <= 0) {
-            throw new IncorrectRecyclingFeeParamException('Engine capacity can\'t be less or equal to zero!');
+            throw new WrongParamException('Engine capacity can\'t be less or equal to zero!');
         }
 
         if ($vehicleAge < 0) {
-            throw new IncorrectRecyclingFeeParamException('Vehicle age can\'t be negative!');
+            throw new WrongParamException('Vehicle age can\'t be negative!');
         }
 
         if ($engineType === EngineTypeEnum::ELECTRIC) {
@@ -150,7 +148,7 @@ final class Tariffs
      * @param int $engineCapacity
      * @param int $vehicleAge
      * @return float
-     * @throws IncorrectRecyclingFeeParamException
+     * @throws WrongParamException
      */
     public static function getRecyclingFeeCoefficientForCompany(
         EngineTypeEnum $engineType,
@@ -158,11 +156,11 @@ final class Tariffs
         int $vehicleAge,
     ): float {
         if ($engineCapacity <= 0) {
-            throw new IncorrectRecyclingFeeParamException('Engine capacity can\'t be less or equal to zero!');
+            throw new WrongParamException('Engine capacity can\'t be less or equal to zero!');
         }
 
         if ($vehicleAge < 0) {
-            throw new IncorrectRecyclingFeeParamException('Vehicle age can\'t be negative!');
+            throw new WrongParamException('Vehicle age can\'t be negative!');
         }
 
         if ($engineType === EngineTypeEnum::ELECTRIC) {

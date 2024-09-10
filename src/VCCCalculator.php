@@ -7,10 +7,7 @@ namespace Aqidel\VCCCalculator;
 use Aqidel\VCCCalculator\Enums\EnginePowerUnitOfMeasurementEnum;
 use Aqidel\VCCCalculator\Enums\EngineTypeEnum;
 use Aqidel\VCCCalculator\Enums\VehicleOwnerTypeEnum;
-use Aqidel\VCCCalculator\Exceptions\IncorrectExciseDutyParamException;
-use Aqidel\VCCCalculator\Exceptions\IncorrectRecyclingFeeParamException;
-use Aqidel\VCCCalculator\Exceptions\IncorrectVehiclePriceException;
-use Exception;
+use Aqidel\VCCCalculator\Exceptions\WrongParamException;
 
 final class VCCCalculator
 {
@@ -87,9 +84,7 @@ final class VCCCalculator
      * @param bool $isForPersonalUsage
      * @param bool $isCommercialVehicle
      * @return float
-     * @throws IncorrectExciseDutyParamException
-     * @throws IncorrectVehiclePriceException
-     * @throws IncorrectRecyclingFeeParamException
+     * @throws WrongParamException
      */
     public function calculate(
         int $enginePower,
@@ -155,7 +150,7 @@ final class VCCCalculator
      * @param bool $isForPersonalUsage
      * @param bool $isCommercialVehicle
      * @return float
-     * @throws IncorrectRecyclingFeeParamException
+     * @throws WrongParamException
      */
     private function calculateRecyclingFee(
         int $vehicleAge,
