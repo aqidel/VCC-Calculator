@@ -110,7 +110,7 @@ final class Tariffs
      * @return float
      * @throws WrongParamException
      */
-    public static function getRecyclingFeeCoefficientForPerson(
+    public static function getRecyclingFeeCoefficientForIndividual(
         EngineTypeEnum $engineType,
         int $engineCapacity,
         int $vehicleAge,
