@@ -70,6 +70,14 @@ final class VCCCalculator
         float $vehiclePriceRUB,
         bool $isCommercialVehicle = false,
     ): float {
+
+        $this->validateInput(
+            $enginePower,
+            $engineCapacityKubCm,
+            $vehicleAge,
+            $vehiclePriceRUB,
+        );
+
         $customsFee = $this->calculateCustomsFee(
             $vehicleOwnerType,
             $engineType,
@@ -178,5 +186,40 @@ final class VCCCalculator
         int $exciseDuty,
     ): float {
         return ($vehiclePriceRUB + $customsFee + $exciseDuty) * Tariffs::BASE_VAT;
+    }
+
+    /**
+     * @param int $enginePower
+     * @param int $engineCapacityKubCm
+     * @param int $vehicleAge
+     * @param float $vehiclePriceRUB
+     * @return void
+     * @throws WrongParamException
+     */
+    private function validateInput(
+        int $enginePower,
+        int $engineCapacityKubCm,
+        int $vehicleAge,
+        float $vehiclePriceRUB,
+    ): void {
+        if ($enginePower <= 0) {
+            throw new WrongParamException('Engine power can\'t be less than or equal to 0!');
+        }
+
+        if ($engineCapacityKubCm <= 0) {
+            throw new WrongParamException('Engine capacity can\'t be less than or equal to 0!');
+        }
+
+        if ($vehicleAge < 0) {
+            throw new WrongParamException('Vehicle age can\'t be less than 0!');
+        }
+
+        if ($vehiclePriceRUB <= 0) {
+            throw new WrongParamException('Vehicle price can\'t be less than or equal to 0!');
+        }
+
+        if (!isset($this->euroExchangeRate) || $this->euroExchangeRate <= 0) {
+            throw new WrongParamException('Euro exchange rate isn\'t set or set to incorrect rate!');
+        }
     }
 }
