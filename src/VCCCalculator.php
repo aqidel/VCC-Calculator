@@ -70,7 +70,6 @@ final class VCCCalculator
         float $vehiclePriceRUB,
         bool $isCommercialVehicle = false,
     ): float {
-
         $this->validateInput(
             $enginePower,
             $engineCapacityKubCm,
@@ -146,7 +145,6 @@ final class VCCCalculator
      * @param int $engineCapacityKubCm
      * @param bool $isCommercialVehicle
      * @return float
-     * @throws WrongParamException
      */
     private function calculateRecyclingFee(
         VehicleOwnerTypeEnum $vehicleOwnerType,
