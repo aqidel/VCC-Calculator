@@ -85,6 +85,8 @@ final class VCCCalculator
             $vehiclePriceRUB,
         );
 
+        var_dump($customsFee);
+
         $recyclingFee = $this->calculateRecyclingFee(
             $vehicleOwnerType,
             $engineType,
@@ -116,16 +118,16 @@ final class VCCCalculator
         int $vehicleAge,
         float $vehiclePriceRUB,
     ): float {
-        $vehiclePriceEUR = $vehiclePriceRUB * $this->euroExchangeRate;
-
         if (
             $vehicleOwnerType === VehicleOwnerTypeEnum::INDIVIDUAL
             || $vehicleOwnerType === VehicleOwnerTypeEnum::INDIVIDUAL_PERSONAL_USAGE
         ) {
             return Tariffs::getCustomsFeeForIndividual(
+                $engineType,
                 $engineCapacityKubCm,
                 $vehicleAge,
-                $vehiclePriceEUR
+                $vehiclePriceRUB,
+                $this->euroExchangeRate,
             );
         }
 
@@ -133,7 +135,8 @@ final class VCCCalculator
             $engineType,
             $engineCapacityKubCm,
             $vehicleAge,
-            $vehiclePriceEUR
+            $vehiclePriceRUB,
+            $this->euroExchangeRate,
         );
     }
 

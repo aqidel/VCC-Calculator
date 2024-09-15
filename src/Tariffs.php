@@ -159,18 +159,29 @@ final class Tariffs
 
     /**
      * Таможенная пошлина для физических лиц, EUR
+     * @param EngineTypeEnum $engineType
      * @param int $engineCapacity
      * @param int $vehicleAge
-     * @param float $vehiclePriceEUR
+     * @param float $vehiclePriceRUB
+     * @param float $euroExchangeRate
      * @return float
      */
     public static function getCustomsFeeForIndividual(
+        EngineTypeEnum $engineType,
         int $engineCapacity,
         int $vehicleAge,
-        float $vehiclePriceEUR,
+        float $vehiclePriceRUB,
+        float $euroExchangeRate,
     ): float {
+        $vehiclePriceEUR = $vehiclePriceRUB / $euroExchangeRate;
+
+        if ($engineType === EngineTypeEnum::ELECTRIC) {
+
+            return $vehiclePriceRUB * 0.15;
+        }
+
         if ($vehicleAge < 3) {
-            return match (true) {
+            $customsFeeEUR = match (true) {
                 $vehiclePriceEUR < 8500 => max($vehiclePriceEUR * 0.54, $engineCapacity * 2.5),
                 $vehiclePriceEUR < 16700 => max($vehiclePriceEUR * 0.48, $engineCapacity * 3.5),
                 $vehiclePriceEUR < 42300 => max($vehiclePriceEUR * 0.48, $engineCapacity * 5.5),
@@ -179,7 +190,7 @@ final class Tariffs
                 default => max($vehiclePriceEUR * 0.48, $engineCapacity * 20),
             };
         } elseif ($vehicleAge < 5) {
-            return match (true) {
+            $customsFeeEUR = match (true) {
                 $engineCapacity <= 1000 => $engineCapacity * 1.5,
                 $engineCapacity <= 1500 => $engineCapacity * 1.7,
                 $engineCapacity <= 1800 => $engineCapacity * 2.5,
@@ -187,16 +198,18 @@ final class Tariffs
                 $engineCapacity <= 3000 => $engineCapacity * 3,
                 default => $engineCapacity * 3.6,
             };
+        } else {
+            $customsFeeEUR = match (true) {
+                $engineCapacity <= 1000 => $engineCapacity * 3,
+                $engineCapacity <= 1500 => $engineCapacity * 3.2,
+                $engineCapacity <= 1800 => $engineCapacity * 3.5,
+                $engineCapacity <= 2300 => $engineCapacity * 4.8,
+                $engineCapacity <= 3000 => $engineCapacity * 5,
+                default => $engineCapacity * 5.7,
+            };
         }
 
-        return match (true) {
-            $engineCapacity <= 1000 => $engineCapacity * 3,
-            $engineCapacity <= 1500 => $engineCapacity * 3.2,
-            $engineCapacity <= 1800 => $engineCapacity * 3.5,
-            $engineCapacity <= 2300 => $engineCapacity * 4.8,
-            $engineCapacity <= 3000 => $engineCapacity * 5,
-            default => $engineCapacity * 5.7,
-        };
+        return $customsFeeEUR * $euroExchangeRate;
     }
 
     /**
@@ -204,56 +217,64 @@ final class Tariffs
      * @param EngineTypeEnum $engineType
      * @param int $engineCapacity
      * @param int $vehicleAge
-     * @param float $vehiclePriceEUR
+     * @param float $vehiclePriceRUB
+     * @param float $euroExchangeRate
      * @return float|null
      */
     public static function getCustomsFeeForCompany(
         EngineTypeEnum $engineType,
         int $engineCapacity,
         int $vehicleAge,
-        float $vehiclePriceEUR,
+        float $vehiclePriceRUB,
+        float $euroExchangeRate,
     ): ?float {
-        if ($engineType === EngineTypeEnum::GASOLINE) {
+        $vehiclePriceEUR = $vehiclePriceRUB / $euroExchangeRate;
+
+        if ($engineType === EngineTypeEnum::ELECTRIC) {
+
+            return $vehiclePriceRUB * 0.15;
+        } elseif ($engineType === EngineTypeEnum::GASOLINE || $engineType === EngineTypeEnum::HYBRID) {
             if ($vehicleAge < 3) {
-                return match (true) {
+                $customsFeeEUR = match (true) {
                     $engineCapacity <= 3000 => $vehiclePriceEUR * 0.15,
                     default => $vehiclePriceEUR * 0.125,
                 };
             } elseif ($vehicleAge < 7) {
-                return match (true) {
+                $customsFeeEUR = match (true) {
                     $engineCapacity <= 1000 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.36),
                     $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
                     $engineCapacity <= 1800 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.36),
                     $engineCapacity <= 3000 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.44),
                     default => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.8),
                 };
+            } else {
+                $customsFeeEUR = match (true) {
+                    $engineCapacity <= 1000 => $engineCapacity * 1.4,
+                    $engineCapacity <= 1500 => $engineCapacity * 1.5,
+                    $engineCapacity <= 1800 => $engineCapacity * 1.6,
+                    $engineCapacity <= 3000 => $engineCapacity * 2.2,
+                    default => $engineCapacity * 3.2,
+                };
             }
-
-            return match (true) {
-                $engineCapacity <= 1000 => $engineCapacity * 1.4,
-                $engineCapacity <= 1500 => $engineCapacity * 1.5,
-                $engineCapacity <= 1800 => $engineCapacity * 1.6,
-                $engineCapacity <= 3000 => $engineCapacity * 2.2,
-                default => $engineCapacity * 3.2,
-            };
         } elseif ($engineType === EngineTypeEnum::DIESEL) {
             if ($vehicleAge < 3) {
-                return $vehiclePriceEUR * 0.15;
+
+                $customsFeeEUR = $vehiclePriceEUR * 0.15;
             } elseif ($vehicleAge < 7) {
-                return match (true) {
+                $customsFeeEUR = match (true) {
                     $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.32),
                     $engineCapacity <= 2500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
                     default => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.8),
                 };
+            } else {
+                $customsFeeEUR = match (true) {
+                    $engineCapacity <= 1500 => $engineCapacity * 1.5,
+                    $engineCapacity <= 2500 => $engineCapacity * 2.2,
+                    default => $engineCapacity * 3.2,
+                };
             }
-
-            return match (true) {
-                $engineCapacity <= 1500 => $engineCapacity * 1.5,
-                $engineCapacity <= 2500 => $engineCapacity * 2.2,
-                default => $engineCapacity * 3.2,
-            };
         }
 
-        return null;
+        return $customsFeeEUR * $euroExchangeRate;
     }
 }
