@@ -6,8 +6,8 @@ namespace Aqidel\VCCCalculator;
 
 use Aqidel\VCCCalculator\Enums\EnginePowerUnitOfMeasurementEnum;
 use Aqidel\VCCCalculator\Enums\EngineTypeEnum;
+use Aqidel\VCCCalculator\Enums\VehicleAgeEnum;
 use Aqidel\VCCCalculator\Enums\VehicleOwnerTypeEnum;
-use Aqidel\VCCCalculator\Exceptions\WrongEngineTypeException;
 use Aqidel\VCCCalculator\Exceptions\WrongParamException;
 
 final class VCCCalculator
@@ -53,43 +53,42 @@ final class VCCCalculator
 
     /**
      * @param VehicleOwnerTypeEnum $vehicleOwnerType
+     * @param VehicleAgeEnum $vehicleAge
      * @param EngineTypeEnum $engineType
      * @param int $enginePower
      * @param int $engineCapacityKubCm
-     * @param int $vehicleAge
      * @param float $vehiclePriceRUB
      * @param bool $isCommercialVehicle
      * @return float
-     * @throws WrongParamException|WrongEngineTypeException
+     * @throws WrongParamException
      */
     public function calculate(
         VehicleOwnerTypeEnum $vehicleOwnerType,
+        VehicleAgeEnum $vehicleAge,
         EngineTypeEnum $engineType,
         int $enginePower,
         int $engineCapacityKubCm,
-        int $vehicleAge,
         float $vehiclePriceRUB,
         bool $isCommercialVehicle = false,
     ): float {
         $this->validateInput(
             $enginePower,
             $engineCapacityKubCm,
-            $vehicleAge,
             $vehiclePriceRUB,
         );
 
         $customsFee = $this->calculateCustomsFee(
             $vehicleOwnerType,
+            $vehicleAge,
             $engineType,
             $engineCapacityKubCm,
-            $vehicleAge,
             $vehiclePriceRUB,
         );
 
         $recyclingFee = $this->calculateRecyclingFee(
+            $vehicleAge,
             $vehicleOwnerType,
             $engineType,
-            $vehicleAge,
             $engineCapacityKubCm,
             $isCommercialVehicle,
         );
@@ -116,18 +115,17 @@ final class VCCCalculator
     /**
      * Вычисляем таможенную пошлину
      * @param VehicleOwnerTypeEnum $vehicleOwnerType
+     * @param VehicleAgeEnum $vehicleAge
      * @param EngineTypeEnum $engineType
      * @param int $engineCapacityKubCm
-     * @param int $vehicleAge
      * @param float $vehiclePriceRUB
      * @return float
-     * @throws WrongEngineTypeException
      */
     private function calculateCustomsFee(
         VehicleOwnerTypeEnum $vehicleOwnerType,
+        VehicleAgeEnum $vehicleAge,
         EngineTypeEnum $engineType,
         int $engineCapacityKubCm,
-        int $vehicleAge,
         float $vehiclePriceRUB,
     ): float {
         if (
@@ -135,18 +133,18 @@ final class VCCCalculator
             || $vehicleOwnerType === VehicleOwnerTypeEnum::INDIVIDUAL_PERSONAL_USAGE
         ) {
             return Tariffs::getCustomsFeeForIndividual(
+                $vehicleAge,
                 $engineType,
                 $engineCapacityKubCm,
-                $vehicleAge,
                 $vehiclePriceRUB,
                 $this->euroExchangeRate,
             );
         }
 
         return Tariffs::getCustomsFeeForCompany(
+            $vehicleAge,
             $engineType,
             $engineCapacityKubCm,
-            $vehicleAge,
             $vehiclePriceRUB,
             $this->euroExchangeRate,
         );
@@ -154,17 +152,17 @@ final class VCCCalculator
 
     /**
      * Подсчет утильсбора
+     * @param VehicleAgeEnum $vehicleAge
      * @param VehicleOwnerTypeEnum $vehicleOwnerType
      * @param EngineTypeEnum $engineType
-     * @param int $vehicleAge
      * @param int $engineCapacityKubCm
      * @param bool $isCommercialVehicle
      * @return float
      */
     private function calculateRecyclingFee(
+        VehicleAgeEnum $vehicleAge,
         VehicleOwnerTypeEnum $vehicleOwnerType,
         EngineTypeEnum $engineType,
-        int $vehicleAge,
         int $engineCapacityKubCm,
         bool $isCommercialVehicle = false,
     ): float {
@@ -180,8 +178,8 @@ final class VCCCalculator
             || $vehicleOwnerType === VehicleOwnerTypeEnum::INDIVIDUAL_PERSONAL_USAGE;
 
         $coefficient = $isOwnerAnIndividual
-            ? Tariffs::getRecyclingFeeCoefficientForIndividual($engineType, $engineCapacityKubCm, $vehicleAge)
-            : Tariffs::getRecyclingFeeCoefficientForCompany($engineType, $engineCapacityKubCm, $vehicleAge);
+            ? Tariffs::getRecyclingFeeCoefficientForIndividual($vehicleAge, $engineType, $engineCapacityKubCm)
+            : Tariffs::getRecyclingFeeCoefficientForCompany($vehicleAge, $engineType, $engineCapacityKubCm);
 
         return round($baseRate * $coefficient, 2);
     }
@@ -204,7 +202,6 @@ final class VCCCalculator
     /**
      * @param int $enginePower
      * @param int $engineCapacityKubCm
-     * @param int $vehicleAge
      * @param float $vehiclePriceRUB
      * @return void
      * @throws WrongParamException
@@ -212,7 +209,6 @@ final class VCCCalculator
     private function validateInput(
         int $enginePower,
         int $engineCapacityKubCm,
-        int $vehicleAge,
         float $vehiclePriceRUB,
     ): void {
         if ($enginePower <= 0) {
@@ -221,10 +217,6 @@ final class VCCCalculator
 
         if ($engineCapacityKubCm <= 0) {
             throw new WrongParamException('Engine capacity can\'t be less than or equal to 0!');
-        }
-
-        if ($vehicleAge < 0) {
-            throw new WrongParamException('Vehicle age can\'t be less than 0!');
         }
 
         if ($vehiclePriceRUB <= 0) {

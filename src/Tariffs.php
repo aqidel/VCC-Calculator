@@ -6,7 +6,7 @@ namespace Aqidel\VCCCalculator;
 
 use Aqidel\VCCCalculator\Enums\EnginePowerUnitOfMeasurementEnum;
 use Aqidel\VCCCalculator\Enums\EngineTypeEnum;
-use Aqidel\VCCCalculator\Exceptions\WrongEngineTypeException;
+use Aqidel\VCCCalculator\Enums\VehicleAgeEnum;
 
 /**
  * Ставки пошлин и налогов
@@ -86,31 +86,31 @@ final class Tariffs
 
     /**
      * Льготный утилизационный сбор при ввозе для личного пользования
-     * @param int $vehicleAge
+     * @param VehicleAgeEnum $vehicleAge
      * @return int
      */
-    public static function getRecyclingFeeForPersonalUsage(int $vehicleAge): int
+    public static function getRecyclingFeeForPersonalUsage(VehicleAgeEnum $vehicleAge): int
     {
-        return $vehicleAge < 3 ? 3400 : 5200;
+        return $vehicleAge === VehicleAgeEnum::LESS_THAN_3 ? 3400 : 5200;
     }
 
     /**
      * Коэффициент утилизационного сбора для физических лиц
+     * @param VehicleAgeEnum $vehicleAge
      * @param EngineTypeEnum $engineType
      * @param int $engineCapacity
-     * @param int $vehicleAge
      * @return float
      */
     public static function getRecyclingFeeCoefficientForIndividual(
+        VehicleAgeEnum $vehicleAge,
         EngineTypeEnum $engineType,
         int $engineCapacity,
-        int $vehicleAge,
     ): float {
         if ($engineType === EngineTypeEnum::ELECTRIC) {
             return $vehicleAge < 3 ? 0.17 : 0.26;
         }
 
-        if ($vehicleAge < 3) {
+        if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
             return match (true) {
                 $engineCapacity <= 3000 => 0.17,
                 $engineCapacity <= 3500 => 48.5,
@@ -127,21 +127,21 @@ final class Tariffs
 
     /**
      * Коэффициент утилизационного сбора для юридических лиц
+     * @param VehicleAgeEnum $vehicleAge
      * @param EngineTypeEnum $engineType
      * @param int $engineCapacity
-     * @param int $vehicleAge
      * @return float
      */
     public static function getRecyclingFeeCoefficientForCompany(
+        VehicleAgeEnum $vehicleAge,
         EngineTypeEnum $engineType,
         int $engineCapacity,
-        int $vehicleAge,
     ): float {
         if ($engineType === EngineTypeEnum::ELECTRIC) {
             return $vehicleAge < 3 ? 18 : 67.34;
         }
 
-        if ($vehicleAge < 3) {
+        if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
             return match (true) {
                 $engineCapacity <= 1000 => 4.06,
                 $engineCapacity <= 2000 => 15.03,
@@ -162,17 +162,17 @@ final class Tariffs
 
     /**
      * Таможенная пошлина для физических лиц, EUR
+     * @param VehicleAgeEnum $vehicleAge
      * @param EngineTypeEnum $engineType
      * @param int $engineCapacity
-     * @param int $vehicleAge
      * @param float $vehiclePriceRUB
      * @param float $euroExchangeRate
      * @return float
      */
     public static function getCustomsFeeForIndividual(
+        VehicleAgeEnum $vehicleAge,
         EngineTypeEnum $engineType,
         int $engineCapacity,
-        int $vehicleAge,
         float $vehiclePriceRUB,
         float $euroExchangeRate,
     ): float {
@@ -183,7 +183,7 @@ final class Tariffs
             return round($vehiclePriceRUB * 0.15, 2);
         }
 
-        if ($vehicleAge < 3) {
+        if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
             $customsFeeEUR = match (true) {
                 $vehiclePriceEUR < 8500 => max($vehiclePriceEUR * 0.54, $engineCapacity * 2.5),
                 $vehiclePriceEUR < 16700 => max($vehiclePriceEUR * 0.48, $engineCapacity * 3.5),
@@ -192,7 +192,7 @@ final class Tariffs
                 $vehiclePriceEUR < 169000 => max($vehiclePriceEUR * 0.48, $engineCapacity * 15),
                 default => max($vehiclePriceEUR * 0.48, $engineCapacity * 20),
             };
-        } elseif ($vehicleAge < 5) {
+        } elseif ($vehicleAge === VehicleAgeEnum::FROM_3_TO_5) {
             $customsFeeEUR = match (true) {
                 $engineCapacity <= 1000 => $engineCapacity * 1.5,
                 $engineCapacity <= 1500 => $engineCapacity * 1.7,
@@ -217,18 +217,17 @@ final class Tariffs
 
     /**
      * Таможенная пошлина для юридических лиц, EUR
+     * @param VehicleAgeEnum $vehicleAge
      * @param EngineTypeEnum $engineType
      * @param int $engineCapacity
-     * @param int $vehicleAge
      * @param float $vehiclePriceRUB
      * @param float $euroExchangeRate
      * @return float|null
-     * @throws WrongEngineTypeException
      */
     public static function getCustomsFeeForCompany(
+        VehicleAgeEnum $vehicleAge,
         EngineTypeEnum $engineType,
         int $engineCapacity,
-        int $vehicleAge,
         float $vehiclePriceRUB,
         float $euroExchangeRate,
     ): ?float {
@@ -238,12 +237,15 @@ final class Tariffs
 
             return round($vehiclePriceRUB * 0.15, 2);
         } elseif ($engineType === EngineTypeEnum::GASOLINE || $engineType === EngineTypeEnum::HYBRID) {
-            if ($vehicleAge < 3) {
+            if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
                 $customsFeeEUR = match (true) {
                     $engineCapacity <= 3000 => $vehiclePriceEUR * 0.15,
                     default => $vehiclePriceEUR * 0.125,
                 };
-            } elseif ($vehicleAge < 7) {
+            } elseif (
+                $vehicleAge === VehicleAgeEnum::FROM_3_TO_5
+                || $vehicleAge === VehicleAgeEnum::FROM_5_TO_7
+            ) {
                 $customsFeeEUR = match (true) {
                     $engineCapacity <= 1000 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.36),
                     $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
@@ -260,11 +262,14 @@ final class Tariffs
                     default => $engineCapacity * 3.2,
                 };
             }
-        } elseif ($engineType === EngineTypeEnum::DIESEL) {
-            if ($vehicleAge < 3) {
+        } else {
+            if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
 
                 $customsFeeEUR = $vehiclePriceEUR * 0.15;
-            } elseif ($vehicleAge < 7) {
+            } elseif (
+                $vehicleAge === VehicleAgeEnum::FROM_3_TO_5
+                || $vehicleAge === VehicleAgeEnum::FROM_5_TO_7
+            ) {
                 $customsFeeEUR = match (true) {
                     $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.32),
                     $engineCapacity <= 2500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
@@ -277,8 +282,6 @@ final class Tariffs
                     default => $engineCapacity * 3.2,
                 };
             }
-        } else {
-            throw new WrongEngineTypeException('Engine type not supported!');
         }
 
         return round($customsFeeEUR * $euroExchangeRate, 2);
