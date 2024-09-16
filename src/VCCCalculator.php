@@ -7,6 +7,7 @@ namespace Aqidel\VCCCalculator;
 use Aqidel\VCCCalculator\Enums\EnginePowerUnitOfMeasurementEnum;
 use Aqidel\VCCCalculator\Enums\EngineTypeEnum;
 use Aqidel\VCCCalculator\Enums\VehicleOwnerTypeEnum;
+use Aqidel\VCCCalculator\Exceptions\WrongEngineTypeException;
 use Aqidel\VCCCalculator\Exceptions\WrongParamException;
 
 final class VCCCalculator
@@ -59,7 +60,7 @@ final class VCCCalculator
      * @param float $vehiclePriceRUB
      * @param bool $isCommercialVehicle
      * @return float
-     * @throws WrongParamException
+     * @throws WrongParamException|WrongEngineTypeException
      */
     public function calculate(
         VehicleOwnerTypeEnum $vehicleOwnerType,
@@ -85,8 +86,6 @@ final class VCCCalculator
             $vehiclePriceRUB,
         );
 
-        var_dump($customsFee);
-
         $recyclingFee = $this->calculateRecyclingFee(
             $vehicleOwnerType,
             $engineType,
@@ -96,6 +95,18 @@ final class VCCCalculator
         );
 
         $clearanceTax = Tariffs::getCustomsClearanceTax($vehiclePriceRUB);
+
+        // Физ. лица не платят акциз и НДС, кроме как на электромобили
+        if (
+            (
+                $vehicleOwnerType === VehicleOwnerTypeEnum::INDIVIDUAL_PERSONAL_USAGE
+                || $vehicleOwnerType === VehicleOwnerTypeEnum::INDIVIDUAL
+            )
+            && $engineType !== EngineTypeEnum::ELECTRIC
+        ) {
+            return $customsFee + $recyclingFee + $clearanceTax;
+        }
+
         $exciseDuty = Tariffs::getExciseDuty($this->enginePowerUnitOfMeasurement, $enginePower);
         $vat = $this->calculateVAT($vehiclePriceRUB, $customsFee, $exciseDuty);
 
@@ -110,6 +121,7 @@ final class VCCCalculator
      * @param int $vehicleAge
      * @param float $vehiclePriceRUB
      * @return float
+     * @throws WrongEngineTypeException
      */
     private function calculateCustomsFee(
         VehicleOwnerTypeEnum $vehicleOwnerType,
@@ -167,11 +179,11 @@ final class VCCCalculator
         $isOwnerAnIndividual = $vehicleOwnerType === VehicleOwnerTypeEnum::INDIVIDUAL
             || $vehicleOwnerType === VehicleOwnerTypeEnum::INDIVIDUAL_PERSONAL_USAGE;
 
-        return $baseRate * (
-            $isOwnerAnIndividual
-                ? Tariffs::getRecyclingFeeCoefficientForIndividual($engineType, $engineCapacityKubCm, $vehicleAge)
-                : Tariffs::getRecyclingFeeCoefficientForCompany($engineType, $engineCapacityKubCm, $vehicleAge)
-            );
+        $coefficient = $isOwnerAnIndividual
+            ? Tariffs::getRecyclingFeeCoefficientForIndividual($engineType, $engineCapacityKubCm, $vehicleAge)
+            : Tariffs::getRecyclingFeeCoefficientForCompany($engineType, $engineCapacityKubCm, $vehicleAge);
+
+        return round($baseRate * $coefficient, 2);
     }
 
     /**
@@ -186,7 +198,7 @@ final class VCCCalculator
         float $customsFee,
         int $exciseDuty,
     ): float {
-        return ($vehiclePriceRUB + $customsFee + $exciseDuty) * Tariffs::BASE_VAT;
+        return round(($vehiclePriceRUB + $customsFee + $exciseDuty) * Tariffs::BASE_VAT, 2);
     }
 
     /**

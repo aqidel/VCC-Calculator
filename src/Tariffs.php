@@ -6,6 +6,7 @@ namespace Aqidel\VCCCalculator;
 
 use Aqidel\VCCCalculator\Enums\EnginePowerUnitOfMeasurementEnum;
 use Aqidel\VCCCalculator\Enums\EngineTypeEnum;
+use Aqidel\VCCCalculator\Exceptions\WrongEngineTypeException;
 
 /**
  * Ставки пошлин и налогов
@@ -60,7 +61,7 @@ final class Tariffs
             $enginePower = (int)ceil($enginePower * 1.3596);
         }
 
-        return match (true) {
+        $exciseRate = match (true) {
             $enginePower <= 90 => 0,
             $enginePower <= 150 => 55,
             $enginePower <= 200 => 531,
@@ -69,6 +70,8 @@ final class Tariffs
             $enginePower <= 500 => 1534,
             default => 1584,
         };
+
+        return $exciseRate * $enginePower;
     }
 
     /**
@@ -177,7 +180,7 @@ final class Tariffs
 
         if ($engineType === EngineTypeEnum::ELECTRIC) {
 
-            return $vehiclePriceRUB * 0.15;
+            return round($vehiclePriceRUB * 0.15, 2);
         }
 
         if ($vehicleAge < 3) {
@@ -209,7 +212,7 @@ final class Tariffs
             };
         }
 
-        return $customsFeeEUR * $euroExchangeRate;
+        return round($customsFeeEUR * $euroExchangeRate, 2);
     }
 
     /**
@@ -220,6 +223,7 @@ final class Tariffs
      * @param float $vehiclePriceRUB
      * @param float $euroExchangeRate
      * @return float|null
+     * @throws WrongEngineTypeException
      */
     public static function getCustomsFeeForCompany(
         EngineTypeEnum $engineType,
@@ -232,7 +236,7 @@ final class Tariffs
 
         if ($engineType === EngineTypeEnum::ELECTRIC) {
 
-            return $vehiclePriceRUB * 0.15;
+            return round($vehiclePriceRUB * 0.15, 2);
         } elseif ($engineType === EngineTypeEnum::GASOLINE || $engineType === EngineTypeEnum::HYBRID) {
             if ($vehicleAge < 3) {
                 $customsFeeEUR = match (true) {
@@ -273,8 +277,10 @@ final class Tariffs
                     default => $engineCapacity * 3.2,
                 };
             }
+        } else {
+            throw new WrongEngineTypeException('Engine type not supported!');
         }
 
-        return $customsFeeEUR * $euroExchangeRate;
+        return round($customsFeeEUR * $euroExchangeRate, 2);
     }
 }
