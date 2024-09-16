@@ -179,7 +179,6 @@ final class Tariffs
         $vehiclePriceEUR = $vehiclePriceRUB / $euroExchangeRate;
 
         if ($engineType === EngineTypeEnum::ELECTRIC) {
-
             return round($vehiclePriceRUB * 0.15, 2);
         }
 
@@ -216,7 +215,7 @@ final class Tariffs
     }
 
     /**
-     * Таможенная пошлина для юридических лиц, EUR
+     * Таможенная пошлина для юридических лиц по типу двигателя, EUR
      * @param VehicleAgeEnum $vehicleAge
      * @param EngineTypeEnum $engineType
      * @param int $engineCapacity
@@ -224,7 +223,7 @@ final class Tariffs
      * @param float $euroExchangeRate
      * @return float|null
      */
-    public static function getCustomsFeeForCompany(
+    public static function getCustomsFeeForCompanyByEngineType(
         VehicleAgeEnum $vehicleAge,
         EngineTypeEnum $engineType,
         int $engineCapacity,
@@ -234,56 +233,87 @@ final class Tariffs
         $vehiclePriceEUR = $vehiclePriceRUB / $euroExchangeRate;
 
         if ($engineType === EngineTypeEnum::ELECTRIC) {
-
             return round($vehiclePriceRUB * 0.15, 2);
-        } elseif ($engineType === EngineTypeEnum::GASOLINE || $engineType === EngineTypeEnum::HYBRID) {
-            if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
-                $customsFeeEUR = match (true) {
-                    $engineCapacity <= 3000 => $vehiclePriceEUR * 0.15,
-                    default => $vehiclePriceEUR * 0.125,
-                };
-            } elseif (
-                $vehicleAge === VehicleAgeEnum::FROM_3_TO_5
-                || $vehicleAge === VehicleAgeEnum::FROM_5_TO_7
-            ) {
-                $customsFeeEUR = match (true) {
-                    $engineCapacity <= 1000 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.36),
-                    $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
-                    $engineCapacity <= 1800 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.36),
-                    $engineCapacity <= 3000 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.44),
-                    default => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.8),
-                };
-            } else {
-                $customsFeeEUR = match (true) {
-                    $engineCapacity <= 1000 => $engineCapacity * 1.4,
-                    $engineCapacity <= 1500 => $engineCapacity * 1.5,
-                    $engineCapacity <= 1800 => $engineCapacity * 1.6,
-                    $engineCapacity <= 3000 => $engineCapacity * 2.2,
-                    default => $engineCapacity * 3.2,
-                };
-            }
+        } elseif (
+            $engineType === EngineTypeEnum::GASOLINE
+            || $engineType === EngineTypeEnum::HYBRID
+        ) {
+            $customsFeeEUR = self::getCustomsFeeGasolineOrHybridEngine($vehicleAge, $engineCapacity, $vehiclePriceEUR);
         } else {
-            if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
-
-                $customsFeeEUR = $vehiclePriceEUR * 0.15;
-            } elseif (
-                $vehicleAge === VehicleAgeEnum::FROM_3_TO_5
-                || $vehicleAge === VehicleAgeEnum::FROM_5_TO_7
-            ) {
-                $customsFeeEUR = match (true) {
-                    $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.32),
-                    $engineCapacity <= 2500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
-                    default => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.8),
-                };
-            } else {
-                $customsFeeEUR = match (true) {
-                    $engineCapacity <= 1500 => $engineCapacity * 1.5,
-                    $engineCapacity <= 2500 => $engineCapacity * 2.2,
-                    default => $engineCapacity * 3.2,
-                };
-            }
+            $customsFeeEUR = self::getCustomsFeeDieselEngine($vehicleAge, $engineCapacity, $vehiclePriceEUR);
         }
 
         return round($customsFeeEUR * $euroExchangeRate, 2);
+    }
+
+    /**
+     * Таможенная пошлина для юр. лиц, бензиновый или гибридный двигатель, EUR
+     * @param VehicleAgeEnum $vehicleAge
+     * @param int $engineCapacity
+     * @param float $vehiclePriceEUR
+     * @return float
+     */
+    private static function getCustomsFeeGasolineOrHybridEngine(
+        VehicleAgeEnum $vehicleAge,
+        int $engineCapacity,
+        float $vehiclePriceEUR,
+    ): float {
+        if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
+            return match (true) {
+                $engineCapacity <= 3000 => $vehiclePriceEUR * 0.15,
+                default => $vehiclePriceEUR * 0.125,
+            };
+        } elseif (
+            $vehicleAge === VehicleAgeEnum::FROM_3_TO_5
+            || $vehicleAge === VehicleAgeEnum::FROM_5_TO_7
+        ) {
+            return match (true) {
+                $engineCapacity <= 1000 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.36),
+                $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
+                $engineCapacity <= 1800 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.36),
+                $engineCapacity <= 3000 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.44),
+                default => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.8),
+            };
+        }
+
+        return match (true) {
+            $engineCapacity <= 1000 => $engineCapacity * 1.4,
+            $engineCapacity <= 1500 => $engineCapacity * 1.5,
+            $engineCapacity <= 1800 => $engineCapacity * 1.6,
+            $engineCapacity <= 3000 => $engineCapacity * 2.2,
+            default => $engineCapacity * 3.2,
+        };
+    }
+
+    /**
+     * Таможенная пошлина для юр. лиц, дизельный двигатель, EUR
+     * @param VehicleAgeEnum $vehicleAge
+     * @param int $engineCapacity
+     * @param float $vehiclePriceEUR
+     * @return float
+     */
+    private static function getCustomsFeeDieselEngine(
+        VehicleAgeEnum $vehicleAge,
+        int $engineCapacity,
+        float $vehiclePriceEUR,
+    ): float {
+        if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
+            return $vehiclePriceEUR * 0.15;
+        } elseif (
+            $vehicleAge === VehicleAgeEnum::FROM_3_TO_5
+            || $vehicleAge === VehicleAgeEnum::FROM_5_TO_7
+        ) {
+            return match (true) {
+                $engineCapacity <= 1500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.32),
+                $engineCapacity <= 2500 => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.4),
+                default => max($vehiclePriceEUR * 0.2, $engineCapacity * 0.8),
+            };
+        }
+
+        return match (true) {
+            $engineCapacity <= 1500 => $engineCapacity * 1.5,
+            $engineCapacity <= 2500 => $engineCapacity * 2.2,
+            default => $engineCapacity * 3.2,
+        };
     }
 }

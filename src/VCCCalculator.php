@@ -141,7 +141,7 @@ final class VCCCalculator
             );
         }
 
-        return Tariffs::getCustomsFeeForCompany(
+        return Tariffs::getCustomsFeeForCompanyByEngineType(
             $vehicleAge,
             $engineType,
             $engineCapacityKubCm,
