@@ -20,10 +20,10 @@ final class Tariffs
     public const BASE_VAT = 0.2;
 
     /**
-     * Ограничение по объему двигателя для льготного утильсбора
+     * Базовая ставка утилизационного сбора на некоммерческие авто
      * @var int
      */
-    public const ENGINE_CAPACITY_EXEMPTION = 3000;
+    public const RECYCLING_FEE_BASE_RATE = 20000;
 
     /**
      * Сбор за таможенное оформление, RUB
@@ -63,39 +63,46 @@ final class Tariffs
 
         $exciseRate = match (true) {
             $enginePower <= 90 => 0,
-            $enginePower <= 150 => 55,
-            $enginePower <= 200 => 531,
-            $enginePower <= 300 => 869,
-            $enginePower <= 400 => 1482,
-            $enginePower <= 500 => 1534,
-            default => 1584,
+            $enginePower <= 150 => 58,
+            $enginePower <= 200 => 557,
+            $enginePower <= 300 => 912,
+            $enginePower <= 400 => 1555,
+            $enginePower <= 500 => 1609,
+            default => 1662,
         };
 
         return $exciseRate * $enginePower;
     }
 
     /**
-     * Базовая ставка утилизационного сбора, RUB
-     * @param bool $isCommercialVehicle
-     * @return int
-     */
-    public static function getRecyclingFeeBaseRate(bool $isCommercialVehicle = false): int
-    {
-        return $isCommercialVehicle ? 150000 : 20000;
-    }
-
-    /**
-     * Льготный утилизационный сбор при ввозе для личного пользования
+     * Коэффициент утилизационного сбора для физических лиц (личное пользование)
      * @param VehicleAgeEnum $vehicleAge
-     * @return int
+     * @param EngineTypeEnum $engineType
+     * @param int $engineCapacity
+     * @return float
      */
-    public static function getRecyclingFeeForPersonalUsage(VehicleAgeEnum $vehicleAge): int
-    {
-        return $vehicleAge === VehicleAgeEnum::LESS_THAN_3 ? 3400 : 5200;
+    public static function getRecyclingFeeCoefficientForPersonalUsage(
+        VehicleAgeEnum $vehicleAge,
+        EngineTypeEnum $engineType,
+        int $engineCapacity,
+    ): float {
+        if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
+            return match (true) {
+                $engineCapacity <= 3000 || $engineType === EngineTypeEnum::ELECTRIC => 0.17,
+                $engineCapacity <= 3500 => 48.5,
+                default => 61.76,
+            };
+        }
+
+        return match (true) {
+            $engineCapacity <= 3000 || $engineType === EngineTypeEnum::ELECTRIC => 0.26,
+            $engineCapacity <= 3500 => 74.275,
+            default => 81.19,
+        };
     }
 
     /**
-     * Коэффициент утилизационного сбора для физических лиц
+     * Коэффициент утилизационного сбора для физических лиц (перепродажа)
      * @param VehicleAgeEnum $vehicleAge
      * @param EngineTypeEnum $engineType
      * @param int $engineCapacity
@@ -106,20 +113,22 @@ final class Tariffs
         EngineTypeEnum $engineType,
         int $engineCapacity,
     ): float {
-        if ($engineType === EngineTypeEnum::ELECTRIC) {
-            return $vehicleAge < 3 ? 0.17 : 0.26;
-        }
-
         if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
             return match (true) {
-                $engineCapacity <= 3000 => 0.17,
+                $engineType === EngineTypeEnum::ELECTRIC => 1.63,
+                $engineCapacity <= 1000 => 4.06,
+                $engineCapacity <= 2000 => 15.3,
+                $engineCapacity <= 3000 => 42.24,
                 $engineCapacity <= 3500 => 48.5,
-                default => 61.67,
+                default => 61.76,
             };
         }
 
         return match (true) {
-            $engineCapacity <= 3000 => 0.26,
+            $engineType === EngineTypeEnum::ELECTRIC => 6.1,
+            $engineCapacity <= 1000 => 10.36,
+            $engineCapacity <= 2000 => 26.44,
+            $engineCapacity <= 3000 => 63.95,
             $engineCapacity <= 3500 => 74.25,
             default => 81.19,
         };
@@ -137,12 +146,9 @@ final class Tariffs
         EngineTypeEnum $engineType,
         int $engineCapacity,
     ): float {
-        if ($engineType === EngineTypeEnum::ELECTRIC) {
-            return $vehicleAge < 3 ? 18 : 67.34;
-        }
-
         if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
             return match (true) {
+                $engineType === EngineTypeEnum::ELECTRIC => 1.63,
                 $engineCapacity <= 1000 => 4.06,
                 $engineCapacity <= 2000 => 15.03,
                 $engineCapacity <= 3000 => 42.24,
@@ -152,6 +158,7 @@ final class Tariffs
         }
 
         return match (true) {
+            $engineType === EngineTypeEnum::ELECTRIC => 6.1,
             $engineCapacity <= 1000 => 10.36,
             $engineCapacity <= 2000 => 26.44,
             $engineCapacity <= 3000 => 63.95,
@@ -176,10 +183,10 @@ final class Tariffs
         float $vehiclePriceRUB,
         float $euroExchangeRate,
     ): float {
-        $vehiclePriceEUR = $vehiclePriceRUB / $euroExchangeRate;
+        $vehiclePriceEUR = round($vehiclePriceRUB / $euroExchangeRate, 2);
 
         if ($engineType === EngineTypeEnum::ELECTRIC) {
-            return round($vehiclePriceRUB * 0.15, 2);
+            return $vehiclePriceRUB * 0.15;
         }
 
         if ($vehicleAge === VehicleAgeEnum::LESS_THAN_3) {
@@ -211,7 +218,7 @@ final class Tariffs
             };
         }
 
-        return round($customsFeeEUR * $euroExchangeRate, 2);
+        return $customsFeeEUR * $euroExchangeRate;
     }
 
     /**
@@ -230,10 +237,10 @@ final class Tariffs
         float $vehiclePriceRUB,
         float $euroExchangeRate,
     ): ?float {
-        $vehiclePriceEUR = $vehiclePriceRUB / $euroExchangeRate;
+        $vehiclePriceEUR = round($vehiclePriceRUB / $euroExchangeRate, 2);
 
         if ($engineType === EngineTypeEnum::ELECTRIC) {
-            return round($vehiclePriceRUB * 0.15, 2);
+            return $vehiclePriceRUB * 0.15;
         } elseif (
             $engineType === EngineTypeEnum::GASOLINE
             || $engineType === EngineTypeEnum::HYBRID
@@ -243,7 +250,7 @@ final class Tariffs
             $customsFeeEUR = self::getCustomsFeeDieselEngine($vehicleAge, $engineCapacity, $vehiclePriceEUR);
         }
 
-        return round($customsFeeEUR * $euroExchangeRate, 2);
+        return $customsFeeEUR * $euroExchangeRate;
     }
 
     /**
